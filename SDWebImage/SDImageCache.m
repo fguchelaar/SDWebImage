@@ -147,6 +147,13 @@ BOOL ImageDataHasPNGPreffix(NSData *data) {
         return;
     }
 
+    // Check valid image
+    if(imageData && ![self isImageDataValid:imageData]) {
+        NSLog(@"Image data not valid");
+        [self removeImageForKey:key];
+        return;
+    }
+
     [self.memCache setObject:image forKey:key cost:image.size.height * image.size.width * image.scale];
 
     if (toDisk) {
@@ -189,6 +196,39 @@ BOOL ImageDataHasPNGPreffix(NSData *data) {
             }
         });
     }
+}
+
+- (BOOL)isImageDataValid: (NSData *) data {
+
+    if(data.length == 0) {
+        return false;
+    }
+
+    NSRange begin = NSMakeRange(0, 2);
+    NSRange end = NSMakeRange([data length] - 2, 2);
+
+    unsigned char expectedBegin[2] = {
+            255, 216
+    };
+    unsigned char expectedBegin2[2] = {
+            137, 'P'
+    };
+
+    unsigned char bufferBegin[2];
+    [data getBytes: bufferBegin range: begin];
+
+    unsigned char expectedEnd[2] = {
+            255, 217
+    };
+    unsigned char expectedEnd2[2] = {
+            '`', 130
+    };
+    unsigned char bufferEnd[2];
+    [data getBytes: bufferEnd range: end];
+    return ((expectedBegin[0] == bufferBegin[0] || expectedBegin2[0] == bufferBegin[0]) &&
+            (expectedBegin[1] == bufferBegin[1] || expectedBegin2[1] == bufferBegin[1]) &&
+            (expectedEnd[0] == bufferEnd[0] || expectedEnd2[0] == bufferEnd[0] ) &&
+            (expectedEnd[1] == bufferEnd[1] || expectedEnd2[1] == bufferEnd[1]));
 }
 
 - (void)storeImage:(UIImage *)image forKey:(NSString *)key {
